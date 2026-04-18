@@ -1,14 +1,12 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
 from email_tool import envoyer_email
+from gmail_reader import lire_emails
 from dotenv import load_dotenv
 
 load_dotenv()
 
 app = FastAPI()
-
-class Tache(BaseModel):
-    instruction: str
 
 class EmailData(BaseModel):
     destinataire: str
@@ -23,3 +21,7 @@ def accueil():
 def envoyer(data: EmailData):
     resultat = envoyer_email(data.destinataire, data.sujet, data.corps)
     return resultat
+
+@app.get("/emails/lire")
+def lire(nombre: int = 5):
+    return lire_emails(nombre)
