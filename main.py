@@ -50,3 +50,6 @@ def agent(instruction: Instruction):
 @app.get("/emails/surveiller")
 def surveiller():
     return surveiller_et_repondre()
+    @app.get("/ping")
+def ping():
+    return {"status": "alive"}
