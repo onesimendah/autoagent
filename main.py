@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+﻿from fastapi import FastAPI
 from pydantic import BaseModel
 from email_tool import envoyer_email
 from gmail_reader import lire_emails
@@ -51,6 +51,6 @@ def agent(instruction: Instruction):
 def surveiller():
     return surveiller_et_repondre()
 
-    @app.get("/ping")
+@app.get("/ping")
 def ping():
     return {"status": "alive"}
