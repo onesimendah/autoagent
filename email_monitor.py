@@ -4,6 +4,7 @@ from email.header import decode_header
 import os
 import json
 from email_tool import envoyer_email
+from agent_brain import analyser_instruction
 
 EMAILS_TRAITES_FILE = "emails_traites.json"
 
@@ -50,13 +51,36 @@ def surveiller_et_repondre():
             else:
                 sujet = sujet_raw
 
-            corps_reponse = (
-                "Bonjour,\n\n"
-                "Nous avons bien recu votre message concernant : "
-                + sujet
-                + "\n\nNous vous repondrons dans les plus brefs delais.\n\n"
-                "Cordialement,\nAutoAgent"
-            )
+            # Extraire le corps
+            corps = ""
+            if msg.is_multipart():
+                for part in msg.walk():
+                    if part.get_content_type() == "text/plain":
+                        corps = part.get_payload(decode=True).decode()
+                        break
+            else:
+                corps = msg.get_payload(decode=True).decode()
+
+            # Générer une réponse intelligente via l'agent
+            instruction = f"""Tu es un agent AI qui répond aux emails au nom de l'entreprise.
+            
+Email reçu de : {expediteur}
+Sujet : {sujet}
+Message : {corps[:1000]}
+
+Génère une réponse professionnelle, courtoise et adaptée au contenu de ce message.
+Réponds UNIQUEMENT en JSON : {{"action": "repondre", "message": "ta réponse ici"}}"""
+
+            resultat = analyser_instruction(instruction)
+
+            if resultat.get("action") == "réponse":
+                corps_reponse = resultat.get("message", "")
+            else:
+                corps_reponse = (
+                    "Bonjour,\n\nNous avons bien reçu votre message "
+                    "et nous vous répondrons dans les plus brefs délais.\n\n"
+                    "Cordialement,\nAutoAgent"
+                )
 
             envoyer_email(
                 destinataire=expediteur,
