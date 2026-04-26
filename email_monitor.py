@@ -8,6 +8,8 @@ from agent_brain import analyser_instruction
 
 EMAILS_TRAITES_FILE = "emails_traites.json"
 
+MOTS_A_IGNORER = ["no-reply", "noreply", "newsletter", "notification", "donotreply", "mailer-daemon", "postmaster"]
+
 
 def charger_emails_traites():
     try:
@@ -53,6 +55,12 @@ def surveiller_et_repondre():
                 sujet = sujet_raw.decode(encoding or "utf-8")
             else:
                 sujet = sujet_raw
+
+            # Ignorer les emails automatiques
+            if any(mot in expediteur.lower() for mot in MOTS_A_IGNORER):
+                print(f"Email automatique ignoré: {expediteur}")
+                emails_traites.append(id_str)
+                continue
 
             print(f"Traitement email de: {expediteur} | Sujet: {sujet}")
 
