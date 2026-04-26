@@ -25,15 +25,18 @@ def sauvegarder_emails_traites(ids):
 def surveiller_et_repondre():
     utilisateur = os.getenv("GMAIL_USER")
     mot_de_passe = os.getenv("GMAIL_PASSWORD")
+    print(f"Connexion Gmail avec: {utilisateur}")
     emails_traites = charger_emails_traites()
 
     try:
         mail = imaplib.IMAP4_SSL("imap.gmail.com")
         mail.login(utilisateur, mot_de_passe)
+        print("Connexion Gmail réussie")
         mail.select("inbox")
 
         _, messages = mail.search(None, "UNSEEN")
         ids = messages[0].split()
+        print(f"Emails non lus: {len(ids)}")
 
         nouveaux = 0
         for id_email in ids:
@@ -51,7 +54,8 @@ def surveiller_et_repondre():
             else:
                 sujet = sujet_raw
 
-            # Extraire le corps
+            print(f"Traitement email de: {expediteur} | Sujet: {sujet}")
+
             corps = ""
             if msg.is_multipart():
                 for part in msg.walk():
@@ -61,7 +65,6 @@ def surveiller_et_repondre():
             else:
                 corps = msg.get_payload(decode=True).decode()
 
-            # Générer une réponse intelligente via l'agent
             instruction = f"""Tu es un agent AI qui répond aux emails au nom de l'entreprise.
             
 Email reçu de : {expediteur}
@@ -72,6 +75,7 @@ Génère une réponse professionnelle, courtoise et adaptée au contenu de ce me
 Réponds UNIQUEMENT en JSON : {{"action": "repondre", "message": "ta réponse ici"}}"""
 
             resultat = analyser_instruction(instruction)
+            print(f"Résultat agent: {resultat}")
 
             if resultat.get("action") == "réponse":
                 corps_reponse = resultat.get("message", "")
@@ -87,6 +91,7 @@ Réponds UNIQUEMENT en JSON : {{"action": "repondre", "message": "ta réponse ic
                 sujet="Re: " + sujet,
                 corps=corps_reponse
             )
+            print(f"Réponse envoyée à: {expediteur}")
 
             emails_traites.append(id_str)
             nouveaux += 1
@@ -98,4 +103,5 @@ Réponds UNIQUEMENT en JSON : {{"action": "repondre", "message": "ta réponse ic
         return {"status": "succes", "nouveaux_emails": nouveaux}
 
     except Exception as e:
+        print(f"ERREUR surveillance: {str(e)}")
         return {"status": "erreur", "message": str(e)}

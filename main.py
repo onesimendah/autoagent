@@ -23,9 +23,11 @@ class Instruction(BaseModel):
 def planificateur():
     while True:
         try:
-            surveiller_et_repondre()
-        except:
-            pass
+            print("Surveillance en cours...")
+            resultat = surveiller_et_repondre()
+            print(f"Résultat surveillance: {resultat}")
+        except Exception as e:
+            print(f"Erreur planificateur: {e}")
         time.sleep(300)
 
 thread = threading.Thread(target=planificateur, daemon=True)
@@ -51,6 +53,6 @@ def agent(instruction: Instruction):
 def surveiller():
     return surveiller_et_repondre()
 
-@app.get("/ping")
+@app.api_route("/ping", methods=["GET", "HEAD"])
 def ping():
     return {"status": "alive"}
