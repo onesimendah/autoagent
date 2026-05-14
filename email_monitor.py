@@ -1,6 +1,7 @@
 import imaplib
 import email
 from email.header import decode_header
+from email.utils import parseaddr
 import os
 import json
 from email_tool import envoyer_email
@@ -9,6 +10,11 @@ from agent_brain import analyser_instruction
 EMAILS_TRAITES_FILE = "emails_traites.json"
 
 MOTS_A_IGNORER = ["no-reply", "noreply", "newsletter", "notification", "donotreply", "mailer-daemon", "postmaster"]
+
+
+def extraire_email(adresse):
+    _, email_propre = parseaddr(adresse)
+    return email_propre if email_propre else adresse
 
 
 def charger_emails_traites():
@@ -49,7 +55,9 @@ def surveiller_et_repondre():
             _, msg_data = mail.fetch(id_email, "(RFC822)")
             msg = email.message_from_bytes(msg_data[0][1])
 
-            expediteur = msg["From"]
+            expediteur_brut = msg["From"]
+            expediteur = extraire_email(expediteur_brut)
+
             sujet_raw, encoding = decode_header(msg["Subject"])[0]
             if isinstance(sujet_raw, bytes):
                 sujet = sujet_raw.decode(encoding or "utf-8")
