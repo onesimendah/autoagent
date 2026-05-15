@@ -1,24 +1,29 @@
-import resend
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 import os
 
-resend.api_key = os.getenv("RESEND_API_KEY")
-
 def envoyer_email(destinataire: str, sujet: str, corps: str):
+    brevo_login = os.getenv("BREVO_LOGIN")
+    brevo_password = os.getenv("BREVO_SMTP_KEY")
     expediteur = os.getenv("GMAIL_USER")
-    
+
     print(f"Tentative envoi email à: {destinataire}")
-    print(f"Expéditeur: {expediteur}")
-    
+
+    message = MIMEMultipart()
+    message["From"] = expediteur
+    message["To"] = destinataire
+    message["Subject"] = sujet
+    message.attach(MIMEText(corps, "plain"))
+
     try:
-        params = {
-            "from": "AutoAgent <onboarding@resend.dev>",
-            "to": [destinataire],
-            "subject": sujet,
-            "text": corps,
-        }
-        email = resend.Emails.send(params)
+        serveur = smtplib.SMTP("smtp-relay.brevo.com", 587)
+        serveur.starttls()
+        serveur.login(brevo_login, brevo_password)
+        serveur.sendmail(expediteur, destinataire, message.as_string())
+        serveur.quit()
         print(f"Email envoyé avec succès à: {destinataire}")
         return {"status": "succès", "message": f"Email envoyé à {destinataire}"}
     except Exception as e:
-        print(f"ERREUR Resend: {str(e)}")
+        print(f"ERREUR Brevo: {str(e)}")
         return {"status": "erreur", "message": str(e)}
