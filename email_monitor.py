@@ -6,8 +6,10 @@ import os
 import json
 from email_tool import envoyer_email
 from agent_brain import analyser_instruction
+from datetime import datetime
 
 EMAILS_TRAITES_FILE = "emails_traites.json"
+BILAN_FILE = "bilan.json"
 
 MOTS_A_IGNORER = ["no-reply", "noreply", "newsletter", "notification", "donotreply", "mailer-daemon", "postmaster"]
 
@@ -30,11 +32,25 @@ def sauvegarder_emails_traites(ids):
         json.dump(ids, f)
 
 
+def charger_bilan():
+    try:
+        with open(BILAN_FILE, "r") as f:
+            return json.load(f)
+    except Exception:
+        return {"total_recus": 0, "total_traites": 0, "conversations": []}
+
+
+def sauvegarder_bilan(bilan):
+    with open(BILAN_FILE, "w") as f:
+        json.dump(bilan, f)
+
+
 def surveiller_et_repondre():
     utilisateur = os.getenv("GMAIL_USER")
     mot_de_passe = os.getenv("GMAIL_PASSWORD")
     print(f"Connexion Gmail avec: {utilisateur}")
     emails_traites = charger_emails_traites()
+    bilan = charger_bilan()
 
     try:
         mail = imaplib.IMAP4_SSL("imap.gmail.com")
@@ -64,7 +80,8 @@ def surveiller_et_repondre():
             else:
                 sujet = sujet_raw
 
-            # Ignorer les emails automatiques
+            bilan["total_recus"] += 1
+
             if any(mot in expediteur.lower() for mot in MOTS_A_IGNORER):
                 print(f"Email automatique ignoré: {expediteur}")
                 emails_traites.append(id_str)
@@ -109,10 +126,18 @@ Réponds UNIQUEMENT en JSON : {{"action": "repondre", "message": "ta réponse ic
             )
             print(f"Réponse envoyée à: {expediteur}")
 
+            bilan["total_traites"] += 1
+            bilan["conversations"].append({
+                "date": datetime.now().strftime("%d/%m/%Y %H:%M"),
+                "expediteur": expediteur,
+                "sujet": sujet
+            })
+
             emails_traites.append(id_str)
             nouveaux += 1
 
         sauvegarder_emails_traites(emails_traites)
+        sauvegarder_bilan(bilan)
         mail.close()
         mail.logout()
 
